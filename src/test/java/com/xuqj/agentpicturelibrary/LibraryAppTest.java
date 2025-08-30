@@ -41,6 +41,13 @@ class LoveAppTest {
         Assertions.assertNotNull(libraryReport);
     }
 
+    @Test
+    void doChatWithRag() {
+        String chatId = UUID.randomUUID().toString();
+        String message = "为什么上传的图片变模糊了？";
+        String answer =  libraryApp.doChatWithRag(message, chatId);
+        Assertions.assertNotNull(answer);
+    }
 
 }
 

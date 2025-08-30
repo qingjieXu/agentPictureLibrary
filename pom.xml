@@ -138,6 +138,19 @@
             <artifactId>mybatis-plus-jsqlparser-4.9</artifactId>
         </dependency>
 
+        <!-- Spring AI对ETL的支持依赖，支持读取Markdown格式的文档 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-markdown-document-reader</artifactId>
+            <version>1.0.0-M6</version>
+        </dependency>
+
+        <!-- Spring AI基于advisor实现查询增强，包括问答拦截器或检索增强拦截器 -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-advisors-vector-store</artifactId>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>

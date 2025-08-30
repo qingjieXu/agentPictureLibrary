@@ -4,13 +4,16 @@ import com.xuqj.agentpicturelibrary.advisor.MyLoggerAdvisor;
 import com.xuqj.agentpicturelibrary.advisor.ReReadingAdvisor;
 import com.xuqj.agentpicturelibrary.chatmemory.FileBasedChatMemory;
 import com.xuqj.agentpicturelibrary.model.app.LibraryReport;
+import jakarta.annotation.Resource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
+import org.springframework.ai.chat.client.advisor.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.InMemoryChatMemory;
 import org.springframework.ai.chat.model.ChatModel;
 import org.springframework.ai.chat.model.ChatResponse;
+import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -24,13 +27,10 @@ public class LibraryApp {
 
     private final ChatClient chatClient;
 
-    private static final String SYSTEM_PROMPT = "你是一个专业的图库助手，专门帮助用户在图库中查找、理解和操作图像资源。你的能力包括：\n" +
-            "\n" +
-            "1. 图像搜索：根据描述、风格、颜色等特征查找图像\n" +
-            "2. 图像理解：分析图像内容、风格、技术参数\n" +
-            "3. 版权指导：提供图像使用权限和版权信息\n" +
-            "4. 收藏管理：帮助用户管理个人收藏夹\n" +
-            "5. 技术建议：提供图像编辑和使用建议";
+    private static final String SYSTEM_PROMPT = "你是一位专业的智能图库助手，具备摄影美学、空间设计、数字资产管理等专业知识。" +
+            "你的任务是帮助用户高效管理图库，" +
+            "并通过多轮对话精准挖掘用户在「用户画像」「图片用途」「空间场景」三方面的需求，" +
+            "最终提供定制化解决方案。";
 
     public LibraryApp(ChatModel dashscopeChatModel) {
 //        // 初始化基于内存的对话记忆
@@ -55,7 +55,7 @@ public class LibraryApp {
                 .prompt()
                 .user(message)
                 .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
-                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 1))
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
                 .call()
                 .chatResponse();
         String content = response.getResult().getOutput().getText();
@@ -75,6 +75,24 @@ public class LibraryApp {
                 .entity(LibraryReport.class);
         log.info("libraryReport: {}", libraryReport);
         return libraryReport;
+    }
+
+    @Resource
+    private VectorStore libraryAppVectorStore;
+
+    public String doChatWithRag(String message, String chatId) {
+        ChatResponse chatResponse = chatClient
+                .prompt()
+                .user(message)
+                .advisors(spec -> spec.param(CHAT_MEMORY_CONVERSATION_ID_KEY, chatId)
+                        .param(CHAT_MEMORY_RETRIEVE_SIZE_KEY, 10))
+                // 应用知识库问答
+                .advisors(new QuestionAnswerAdvisor(libraryAppVectorStore))
+                .call()
+                .chatResponse();
+        String content = chatResponse.getResult().getOutput().getText();
+        log.info("content: {}", content);
+        return content;
     }
 
 }
